@@ -133,7 +133,7 @@
       tile.className = "tile wall-float";
       tile.style.setProperty("--tw", L.tw + "px");
       tile.style.setProperty("--th", L.th + "px");
-      tile.innerHTML = '<div class="tile-frame"><img loading="lazy" alt="" src="photos/thumb/' + pad(i + 1) + '.jpg"></div>';
+      tile.innerHTML = '<div class="tile-frame"><img loading="lazy" alt="" src="photos/thumb/' + pad(i + 1) + '.jpg?v=2"></div>';
       const sx = rnd(-40, L.vw - L.tw + 40);
       const sy = rnd(-40, L.vh - L.th + 40);
       const rot = rnd(-16, 16);
@@ -163,7 +163,7 @@
     if (i > PHOTO_COUNT || preloadCache.has(i)) return;
     preloadCache.add(i);
     const img = new Image();
-    img.src = "photos/full/" + pad(i) + ".jpg";
+    img.src = "photos/full/" + pad(i) + ".jpg?v=2";
   }
 
   function showPhoto(i) {
@@ -171,7 +171,7 @@
     const prev  = curLayer ? cinA : cinB;
     curLayer = !curLayer;
 
-    layer.style.backgroundImage = `url("photos/full/${pad(i)}.jpg")`;
+    layer.style.backgroundImage = `url("photos/full/${pad(i)}.jpg?v=2")`;
     layer.style.transition = "opacity 0.7s ease";
     layer.classList.remove("kenburns");
     void layer.offsetWidth;                 // restart animation
