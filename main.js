@@ -198,13 +198,20 @@
     await fadeVolume(el, 0, T(1400));        // dip the current song
     showPhase(videoEl_phase);
     video.currentTime = 0;
-    video.muted = false;
     video.playbackRate = FAST ? 8 : 1;
-    video.play().catch(() => {});            // fire-and-forget (don't hang if play() stalls)
+    video.muted = true;                      // start muted → autoplay is allowed on mobile
+    video.play()
+      .then(() => { video.muted = false; })  // bring the sound up once playing
+      .catch(() => {});                      // failed → onerror/fallback below skips quickly
+
     await new Promise((res) => {
-      video.onended = res;
-      setTimeout(res, T(14000));             // safety fallback
+      let done = false;
+      const finish = () => { if (!done) { done = true; res(); } };
+      video.onended = finish;
+      video.onerror = finish;                // skip fast if the video can't load/play
+      setTimeout(finish, T(15000));          // safety fallback (12.4s video + buffer)
     });
+
     video.pause();
     if (!el.ended) {                         // resume the current song
       el.play().catch(() => {});
