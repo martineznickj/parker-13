@@ -37,10 +37,6 @@
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const pad = (n) => String(n).padStart(3, "0");
-  // touch devices can't reliably autoplay video-with-sound (unmuting pauses it),
-  // so the video moment uses a tap-to-play on phones/tablets
-  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ||
-                  (window.matchMedia && matchMedia('(pointer: coarse)').matches);
 
   /* ============================================================
      AUDIO
@@ -205,6 +201,13 @@
   /* ============================================================
      VIDEO MOMENT  (Parker singing)
      ============================================================ */
+  // Within the Begin user-gesture, briefly play the video muted so the element
+  // gets "unlocked" — this lets it auto-play with sound later on iOS/Android.
+  function primeVideo() {
+    video.muted = true;
+    video.play().then(() => { video.pause(); video.currentTime = 0; }).catch(() => {});
+  }
+
   async function playVideo(returnEl) {
     const el = activeMusic === "B" ? musicB : musicA;
     await fadeVolume(el, 0, T(1400));        // dip the current song
@@ -214,33 +217,36 @@
 
     let playing = false;
 
-    if (isTouch) {
-      // Mobile/tablet: autoplay-with-sound is blocked and unmuting a muted
-      // autoplay pauses it — so require a tap (the reliable path to sound).
+    // 1) Try autoplay WITH sound (desktop; on mobile works if the video was
+    //    unlocked by the Begin tap — see primeVideo()).
+    video.muted = false;
+    try { await video.play(); } catch (e) {}
+    await wait(T(700));
+    playing = !video.paused && video.currentTime > 0.05;
+
+    // 2) Blocked → try muted autoplay, then bring the sound up.
+    if (!playing) {
+      video.pause();
+      video.currentTime = 0;
+      video.muted = true;
+      try { await video.play(); } catch (e) {}
+      await wait(T(700));
+      if (!video.paused && video.currentTime > 0.05) {
+        try { video.muted = false; } catch (e) {}
+        await wait(T(250));
+        playing = !video.paused;             // still playing after unmute?
+        if (!playing) { video.pause(); video.currentTime = 0; }
+      }
+    }
+
+    // 3) Still not playing → tap-to-play (the guaranteed path).
+    if (!playing) {
       const tapped = await waitForTap();
       if (tapped) {
         video.muted = false;
         video.currentTime = 0;
         video.play().catch(() => {});
         playing = true;
-      }
-    } else {
-      // Desktop: muted autoplay is allowed; bring the sound up once playing.
-      video.muted = true;
-      try { await video.play(); } catch (e) {}
-      await wait(T(700));                     // give it a beat to actually start
-      const autoplayed = !video.paused && video.currentTime > 0.05;
-      if (autoplayed) {
-        try { video.muted = false; } catch (e) {}
-        playing = true;
-      } else {
-        const tapped = await waitForTap();
-        if (tapped) {
-          video.muted = false;
-          video.currentTime = 0;
-          video.play().catch(() => {});
-          playing = true;
-        }
       }
     }
 
@@ -343,6 +349,7 @@
     showPhase(wallEl);
     buildWall();
     startJourneyMusic();                      // The Nights begins (fire-and-forget)
+    primeVideo();                             // unlock the video for sound later (Begin gesture)
     await wait(WALL_HOLD);
 
     if (aborted) return;
