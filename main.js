@@ -7,7 +7,7 @@
   "use strict";
 
   /* ---------- config ---------- */
-  const PHOTO_COUNT = 128;
+  const PHOTO_COUNT = 127;
   const GRID_COLS = 13;                 // thematic
   const GRID_ROWS = Math.ceil(PHOTO_COUNT / GRID_COLS);
 
@@ -19,8 +19,7 @@
   const ASSEMBLE_MS  = T(4400);   // scatter → grid transition
   const GRID_HOLD    = T(3000);   // admire the full wall
   const PHOTO_MS     = T(1500);   // per-photo in cinematic
-  const VIDEO_AT     = 118;       // after this photo index, play the singing video
-  const CROSS_AT     = 124;       // at this photo, crossfade The Nights → Life Goes On
+  const VIDEO_AT     = 112;       // singing video (Feb 27, 2026) in its chronological spot
 
   /* ---------- elements ---------- */
   const $ = (id) => document.getElementById(id);
@@ -49,6 +48,7 @@
   video.src = "video/parker_singing.mp4";  // Parker singing (the climax)
   musicA.volume = 0;
   musicB.volume = 0;
+  let activeMusic = "A";                  // "A" = The Nights, "B" = Life Goes On
 
   function fadeVolume(el, target, ms) {
     const from = Math.max(0, Math.min(1, el.volume));
@@ -64,20 +64,23 @@
   }
 
   async function startJourneyMusic() {
+    activeMusic = "A";
+    musicA.currentTime = 0;
+    musicB.currentTime = 0;
+    musicB.volume = 0;
     try { await musicA.play(); } catch (e) {}
     await fadeVolume(musicA, 1, 2500);
   }
 
-  async function crossToLifeGoesOn() {
+  // When The Nights finishes, continue with Life Goes On (no looping)
+  musicA.addEventListener("ended", () => {
+    if (activeMusic !== "A") return;
+    activeMusic = "B";
     musicB.currentTime = 0;
     musicB.volume = 0;
-    try { await musicB.play(); } catch (e) {}
-    await Promise.all([
-      fadeVolume(musicA, 0, 3200),
-      fadeVolume(musicB, 1, 3200)
-    ]);
-    musicA.pause();
-  }
+    musicB.play().catch(() => {});
+    fadeVolume(musicB, 1, 3000);
+  });
 
   /* ============================================================
      PHASE SWITCHING
@@ -183,7 +186,6 @@
       if (aborted) return;
       if (i === VIDEO_AT + 1) await videoMoment();
       showPhoto(i);
-      if (i === CROSS_AT) crossToLifeGoesOn();   // fire-and-forget crossfade
       await wait(PHOTO_MS);
     }
   }
@@ -192,7 +194,8 @@
      VIDEO MOMENT  (Parker singing)
      ============================================================ */
   async function videoMoment() {
-    await fadeVolume(musicA, 0, T(1400));    // dip the music
+    const el = activeMusic === "B" ? musicB : musicA;
+    await fadeVolume(el, 0, T(1400));        // dip the current song
     showPhase(videoEl_phase);
     video.currentTime = 0;
     video.muted = false;
@@ -203,12 +206,9 @@
       setTimeout(res, T(14000));             // safety fallback
     });
     video.pause();
-    // fade music back in
-    if (!musicB.volume) {                    // still on The Nights
-      musicA.play().catch(() => {});
-      fadeVolume(musicA, 1, T(1600));
-    } else {
-      fadeVolume(musicB, 1, T(1600));        // already crossed to Life Goes On
+    if (!el.ended) {                         // resume the current song
+      el.play().catch(() => {});
+      fadeVolume(el, 1, T(1600));
     }
     showPhase(cinemaEl);
   }
@@ -235,7 +235,7 @@
     replayBtn.style.opacity = "1";
     // let the warm song breathe, then very gently fade the music down
     await wait(T(26000));
-    fadeVolume(musicB.volume > 0 ? musicB : musicA, 0.25, T(4000));
+    fadeVolume(activeMusic === "B" ? musicB : musicA, 0.25, T(4000));
   }
 
   /* ============================================================
