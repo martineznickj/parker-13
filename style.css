@@ -178,7 +178,14 @@ html, body {
   -webkit-backdrop-filter: blur(6px);
   z-index: 10;
 }
-#tapPlay.visible { display: block; }
+#tapPlay.visible {
+  display: block;
+  animation: tapPulse 1.8s ease-in-out infinite;
+}
+@keyframes tapPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1);    box-shadow: 0 0 0 0 rgba(255,255,255,0.45); }
+  50%      { transform: translate(-50%, -50%) scale(1.06); box-shadow: 0 0 0 16px rgba(255,255,255,0); }
+}
 
 /* ============================================================
    FINALE

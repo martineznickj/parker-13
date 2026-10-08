@@ -38,13 +38,17 @@
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const pad = (n) => String(n).padStart(3, "0");
+  // touch devices can't reliably autoplay video-with-sound (unmuting pauses it),
+  // so the video moment uses a tap-to-play on phones/tablets
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ||
+                  (window.matchMedia && matchMedia('(pointer: coarse)').matches);
 
   /* ============================================================
      AUDIO
      ============================================================ */
   musicA.src = "audio/the_nights.mp3";     // The Nights — Avicii (the journey)
   musicB.src = "audio/life_goes_on.mp3";   // Life Goes On — Oliver Tree (warm ending)
-  video.src = "video/parker_singing.mp4";  // Parker singing (the climax)
+  video.src = "video/parker_singing.mp4?v=2";  // Parker singing (the climax)
   musicA.volume = 0;
   musicB.volume = 0;
   let activeMusic = "A";                  // "A" = The Nights, "B" = Life Goes On
@@ -210,31 +214,49 @@
     video.currentTime = 0;
     video.playbackRate = FAST ? 8 : 1;
 
-    // 1) Try muted autoplay (works on desktop + permissive mobile).
-    video.muted = true;
-    try { await video.play(); } catch (e) {}
-    await wait(T(700));                       // give it a beat to actually start
-    const autoplayed = !video.paused && video.currentTime > 0.05;
+    let playing = false;
 
-    if (autoplayed) {
-      try { video.muted = false; } catch (e) {}   // bring the sound up
-    } else {
-      // 2) Autoplay blocked (common on phones) → ask for a tap, then play with sound.
+    if (isTouch) {
+      // Mobile/tablet: autoplay-with-sound is blocked and unmuting a muted
+      // autoplay pauses it — so require a tap (the reliable path to sound).
       const tapped = await waitForTap();
-      video.currentTime = 0;
-      video.muted = !tapped;                 // tap → sound; auto-continue → silent
-      video.play().catch(() => {});
+      if (tapped) {
+        video.muted = false;
+        video.currentTime = 0;
+        video.play().catch(() => {});
+        playing = true;
+      }
+    } else {
+      // Desktop: muted autoplay is allowed; bring the sound up once playing.
+      video.muted = true;
+      try { await video.play(); } catch (e) {}
+      await wait(T(700));                     // give it a beat to actually start
+      const autoplayed = !video.paused && video.currentTime > 0.05;
+      if (autoplayed) {
+        try { video.muted = false; } catch (e) {}
+        playing = true;
+      } else {
+        const tapped = await waitForTap();
+        if (tapped) {
+          video.muted = false;
+          video.currentTime = 0;
+          video.play().catch(() => {});
+          playing = true;
+        }
+      }
     }
 
-    await new Promise((res) => {
-      let done = false;
-      const finish = () => { if (!done) { done = true; res(); } };
-      video.onended = finish;
-      video.onerror = finish;                // skip fast if the video can't load/play
-      setTimeout(finish, T(16000));          // safety fallback (12.4s video + buffer)
-    });
+    if (playing) {
+      await new Promise((res) => {
+        let done = false;
+        const finish = () => { if (!done) { done = true; res(); } };
+        video.onended = finish;
+        video.onerror = finish;               // skip fast if the video can't load/play
+        setTimeout(finish, T(16000));         // safety fallback (12.4s video + buffer)
+      });
+      video.pause();
+    }
 
-    video.pause();
     if (!el.ended) {                         // resume the current song
       el.play().catch(() => {});
       fadeVolume(el, 1, T(1600));
