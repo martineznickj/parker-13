@@ -15,10 +15,10 @@
   const S = FAST ? 0.04 : 1;
   const T = (ms) => Math.max(70, Math.round(ms * S));
 
-  const WALL_HOLD    = T(5200);   // float before assembly
-  const ASSEMBLE_MS  = T(4400);   // scatter → grid transition
-  const GRID_HOLD    = T(3000);   // admire the full wall
-  const PHOTO_MS     = T(1500);   // per-photo in cinematic
+  const WALL_HOLD    = T(6200);   // float before assembly
+  const ASSEMBLE_MS  = T(5000);   // scatter → grid transition
+  const GRID_HOLD    = T(3600);   // admire the full wall
+  const PHOTO_MS     = T(2200);   // per-photo in cinematic
   const VIDEO_AT     = 112;       // singing video (Feb 27, 2026) in its chronological spot
 
   /* ---------- elements ---------- */
