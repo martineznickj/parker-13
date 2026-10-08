@@ -26,6 +26,7 @@
   const wallCanvas = $("wallCanvas");
   const cinA = $("cinA"), cinB = $("cinB");
   const video = $("singingVideo");
+  const tapPlayEl = $("tapPlay");
   const musicA = $("musicA"), musicB = $("musicB");
   const beginBtn = $("beginBtn"), replayBtn = $("replayBtn");
 
@@ -208,17 +209,29 @@
     showPhase(videoEl_phase);
     video.currentTime = 0;
     video.playbackRate = FAST ? 8 : 1;
-    video.muted = true;                      // start muted → autoplay is allowed on mobile
-    video.play()
-      .then(() => { video.muted = false; })  // bring the sound up once playing
-      .catch(() => {});                      // failed → onerror/fallback below skips quickly
+
+    // 1) Try muted autoplay (works on desktop + permissive mobile).
+    video.muted = true;
+    try { await video.play(); } catch (e) {}
+    await wait(T(700));                       // give it a beat to actually start
+    const autoplayed = !video.paused && video.currentTime > 0.05;
+
+    if (autoplayed) {
+      try { video.muted = false; } catch (e) {}   // bring the sound up
+    } else {
+      // 2) Autoplay blocked (common on phones) → ask for a tap, then play with sound.
+      const tapped = await waitForTap();
+      video.currentTime = 0;
+      video.muted = !tapped;                 // tap → sound; auto-continue → silent
+      video.play().catch(() => {});
+    }
 
     await new Promise((res) => {
       let done = false;
       const finish = () => { if (!done) { done = true; res(); } };
       video.onended = finish;
       video.onerror = finish;                // skip fast if the video can't load/play
-      setTimeout(finish, T(15000));          // safety fallback (12.4s video + buffer)
+      setTimeout(finish, T(16000));          // safety fallback (12.4s video + buffer)
     });
 
     video.pause();
@@ -227,6 +240,23 @@
       fadeVolume(el, 1, T(1600));
     }
     showPhase(cinemaEl);
+  }
+
+  // Show "tap to play" and wait for the user to tap (fresh gesture → sound allowed).
+  // Auto-continues after 20s so the tribute never hangs if left untouched.
+  function waitForTap() {
+    return new Promise((res) => {
+      let tapped = false;
+      function finish() {
+        tapPlayEl.classList.remove("visible");
+        tapPlayEl.removeEventListener("click", onTap);
+        res(tapped);
+      }
+      function onTap() { tapped = true; finish(); }
+      tapPlayEl.classList.add("visible");
+      tapPlayEl.addEventListener("click", onTap);
+      setTimeout(finish, T(20000));
+    });
   }
 
   /* ============================================================
