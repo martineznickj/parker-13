@@ -285,12 +285,38 @@
   }
 
   /* ============================================================
+     SCREEN WAKE LOCK  (keep the device awake while the tribute runs)
+     ============================================================ */
+  let wakeLock = null;
+  let keepAwake = false;
+
+  async function requestWakeLock() {
+    if (!("wakeLock" in navigator) || !keepAwake) return;
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; });
+    } catch (e) { /* unsupported or denied — the tribute still works */ }
+  }
+
+  function releaseWakeLock() {
+    keepAwake = false;
+    if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
+  }
+
+  // the OS drops the lock when the tab is hidden; re-acquire when it's visible again
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && keepAwake) requestWakeLock();
+  });
+
+  /* ============================================================
      MAIN SEQUENCE
      ============================================================ */
   async function run() {
     if (running) return;
     running = true;
     aborted = false;
+    keepAwake = true;
+    requestWakeLock();                        // keep the screen awake during the tribute
 
     showPhase(wallEl);
     buildWall();
@@ -312,10 +338,12 @@
 
     if (aborted) return;
     await showFinale();
+    releaseWakeLock();                        // let the screen sleep once the tribute is done
   }
 
   function reset() {
     aborted = true;
+    releaseWakeLock();
     fadeVolume(musicA, 0, 800);
     fadeVolume(musicB, 0, 800);
     setTimeout(() => { musicA.pause(); musicB.pause(); }, 900);
