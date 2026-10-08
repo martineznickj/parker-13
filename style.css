@@ -1,0 +1,225 @@
+/* ============================================================
+   PARKER · 13 — cinematic memory wall
+   ============================================================ */
+
+:root {
+  --bg: #0b0b12;
+  --bg-warm: #12101a;
+  --cream: #f5ead2;
+  --gold: #e8b06a;
+  --gold-soft: #d9a05a;
+  --muted: rgba(245, 234, 210, 0.55);
+  --serif: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--cream);
+  overflow: hidden;
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ---------- cinematic overlays ---------- */
+.vignette {
+  position: fixed; inset: 0; z-index: 50; pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    transparent 52%, rgba(0,0,0,0.55) 100%);
+}
+.grain {
+  position: fixed; inset: -50%; z-index: 51; pointer-events: none; opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grainShift 1.2s steps(4) infinite;
+}
+@keyframes grainShift {
+  0% { transform: translate(0,0); } 25% { transform: translate(-2%,1%); }
+  50% { transform: translate(1%,-1%); } 75% { transform: translate(-1%,2%); }
+  100% { transform: translate(2%,0); }
+}
+
+/* ---------- phases ---------- */
+.phase {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden;
+  transition: opacity 1.1s ease, visibility 1.1s;
+  z-index: 1;
+}
+.phase.active { opacity: 1; visibility: visible; z-index: 10; }
+
+/* ============================================================
+   TITLE
+   ============================================================ */
+#title .title-inner { text-align: center; padding: 0 6vw; }
+
+.title-eyebrow {
+  font-family: var(--sans); font-size: clamp(10px, 1.6vw, 14px);
+  letter-spacing: 0.42em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 2.5vh;
+  animation: rise 1.4s ease both;
+}
+.title-name {
+  font-family: var(--serif); font-weight: 500;
+  font-size: clamp(52px, 11vw, 140px);
+  line-height: 0.95; letter-spacing: 0.04em;
+  background: linear-gradient(180deg, #fdf7e7 20%, #e8cfa0 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: rise 1.6s 0.25s ease both;
+}
+.title-thirteen {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(110px, 24vw, 300px);
+  line-height: 0.9;
+  background: linear-gradient(180deg, var(--gold) 0%, #b97d3f 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  margin: 1vh 0 0;
+  animation: rise 1.8s 0.45s ease both;
+  text-shadow: 0 0 80px rgba(232,176,106,0.25);
+}
+.title-rule {
+  width: clamp(120px, 20vw, 280px); height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+  margin: 3vh auto; animation: rise 1.6s 0.7s ease both;
+}
+.title-date {
+  font-family: var(--serif); font-style: italic; color: var(--muted);
+  font-size: clamp(15px, 2.4vw, 22px); letter-spacing: 0.18em;
+  animation: rise 1.6s 0.85s ease both;
+}
+.begin-btn {
+  margin-top: 5.5vh; padding: 16px 34px; border-radius: 40px;
+  border: 1px solid rgba(232,176,106,0.5);
+  background: rgba(232,176,106,0.08); color: var(--cream); cursor: pointer;
+  font-family: var(--sans); font-size: 15px; letter-spacing: 0.28em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 12px;
+  transition: background 0.4s, transform 0.4s, box-shadow 0.4s;
+  animation: rise 1.6s 1.05s ease both;
+}
+.begin-btn:hover {
+  background: rgba(232,176,106,0.18);
+  box-shadow: 0 0 40px rgba(232,176,106,0.25);
+  transform: translateY(-2px);
+}
+.begin-btn .begin-play { font-size: 12px; color: var(--gold); }
+.begin-btn.subtle { opacity: 0; animation: rise 1.4s 1.4s ease both; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   MEMORY WALL
+   ============================================================ */
+#wall { background: radial-gradient(ellipse at center, var(--bg-warm) 0%, var(--bg) 70%); }
+#wallCanvas { position: absolute; inset: 0; }
+
+.tile {
+  position: absolute; top: 0; left: 0;
+  width: var(--tw); height: var(--th);
+  will-change: transform, opacity;
+  transition: transform 4.4s cubic-bezier(0.22, 0.9, 0.26, 1);
+}
+.tile-frame {
+  position: relative;
+  width: 100%; height: 100%;
+  background: #fdfdfa; border-radius: 4px;
+  padding: 6px 6px 24px 6px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.4);
+  transition: opacity 0.8s ease;
+}
+.tile-frame img {
+  width: 100%; height: 100%;
+  object-fit: cover; border-radius: 2px; display: block;
+  background: #1a1a22; pointer-events: none;
+}
+.tile-frame::after { content: ""; position: absolute; inset: 0; border-radius: 4px;
+  background: linear-gradient(160deg, rgba(255,255,255,0.25) 0%, transparent 45%); pointer-events: none; }
+
+.tile.dim .tile-frame { opacity: 0.22; }
+.wall-float .tile-frame { animation: floaty 6s ease-in-out infinite; }
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-7px) rotate(0.8deg); }
+}
+
+/* ============================================================
+   CINEMATIC
+   ============================================================ */
+#cinema { background: #000; }
+.cinema-layer {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  opacity: 0; will-change: opacity, transform;
+}
+.cinema-layer.show { opacity: 1; }
+.cinema-layer.kenburns { animation: kenburns 7s ease-out forwards; }
+@keyframes kenburns {
+  0%   { transform: scale(1.06) translate(0, 0); }
+  100% { transform: scale(1.14) translate(-1.2%, -1.2%); }
+}
+
+/* ============================================================
+   VIDEO MOMENT
+   ============================================================ */
+#videoMoment { background: #000; }
+#singingVideo {
+  width: 100%; height: 100%; object-fit: contain;
+  background: #000;
+}
+
+/* ============================================================
+   FINALE
+   ============================================================ */
+#finale {
+  background: radial-gradient(ellipse at 50% 120%, #2a1c10 0%, var(--bg) 62%);
+}
+.finale-inner { text-align: center; padding: 0 6vw; z-index: 2; position: relative; }
+.finale-msg {
+  font-family: var(--serif); font-weight: 500;
+  font-size: clamp(30px, 6.4vw, 76px);
+  line-height: 1.18; letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #fdf7e7 20%, #e8cfa0 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  opacity: 0; animation: rise 2s 0.4s ease both;
+}
+.finale-msg .bang { color: var(--gold); -webkit-text-fill-color: var(--gold); }
+.finale-sub {
+  margin-top: 3.5vh; font-family: var(--serif); font-style: italic;
+  font-size: clamp(16px, 2.6vw, 26px); color: var(--muted); letter-spacing: 0.06em;
+  opacity: 0; animation: rise 2s 1.4s ease both;
+}
+#replayBtn { position: absolute; bottom: 7vh; left: 50%; transform: translateX(-50%); z-index: 3; }
+
+.moon {
+  position: absolute; top: 13%; right: 11%;
+  width: clamp(60px, 9vw, 110px); height: clamp(60px, 9vw, 110px);
+  border-radius: 50%;
+  box-shadow: -26px 14px 0 3px #f3d9a4;
+  opacity: 0; animation: moonIn 2.4s 0.8s ease both, moonGlow 6s 3s ease-in-out infinite;
+}
+@keyframes moonIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 0.9; transform: translateY(0); } }
+@keyframes moonGlow { 0%,100% { box-shadow: -26px 14px 0 3px #f3d9a4, 0 0 40px rgba(243,217,164,0.25); }
+  50% { box-shadow: -26px 14px 0 3px #f7e6bd, 0 0 70px rgba(243,217,164,0.4); } }
+
+.stars { position: absolute; inset: 0; overflow: hidden; }
+.stars span {
+  position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff;
+  animation: twinkle 3.4s ease-in-out infinite;
+}
+@keyframes twinkle { 0%,100% { opacity: 0.15; } 50% { opacity: 0.9; } }
+
+/* ---------- responsive ---------- */
+@media (max-width: 640px) {
+  .begin-btn { padding: 14px 26px; font-size: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.4s !important; transition-duration: 0.4s !important; }
+}
