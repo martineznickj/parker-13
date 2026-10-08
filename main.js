@@ -17,7 +17,6 @@
   const ASSEMBLE_MS  = T(5000);   // scatter → grid transition
   const GRID_HOLD    = T(3600);   // admire the full wall
   const PHOTO_MS     = T(2200);   // per-photo in cinematic
-  const VIDEO_AT     = 112;       // singing video (Feb 27, 2026) in its chronological spot
 
   /* ---------- elements ---------- */
   const $ = (id) => document.getElementById(id);
@@ -198,7 +197,6 @@
   async function runCinematic() {
     for (let i = 1; i <= PHOTO_COUNT; i++) {
       if (aborted) return;
-      if (i === VIDEO_AT + 1) await videoMoment();
       showPhoto(i);
       await wait(PHOTO_MS);
     }
@@ -207,7 +205,7 @@
   /* ============================================================
      VIDEO MOMENT  (Parker singing)
      ============================================================ */
-  async function videoMoment() {
+  async function playVideo(returnEl) {
     const el = activeMusic === "B" ? musicB : musicA;
     await fadeVolume(el, 0, T(1400));        // dip the current song
     showPhase(videoEl_phase);
@@ -261,7 +259,7 @@
       el.play().catch(() => {});
       fadeVolume(el, 1, T(1600));
     }
-    showPhase(cinemaEl);
+    showPhase(returnEl);
   }
 
   // Show "tap to play" and wait for the user to tap (fresh gesture → sound allowed).
@@ -301,8 +299,10 @@
   async function showFinale() {
     showPhase(finaleEl);
     replayBtn.style.opacity = "1";
-    // let the warm song breathe, then very gently fade the music down
-    await wait(T(26000));
+    // let the message land, then play Parker's singing as the closing beat
+    await wait(T(3500));
+    await playVideo(finaleEl);               // auto-plays (tap-to-play on phones)
+    await wait(T(22000));                    // let the message + song breathe
     fadeVolume(activeMusic === "B" ? musicB : musicA, 0.25, T(4000));
   }
 
