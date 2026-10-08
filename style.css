@@ -155,14 +155,14 @@ html, body {
 #cinema { background: #000; }
 .cinema-layer {
   position: absolute; inset: 0;
-  background-size: cover; background-position: center; background-repeat: no-repeat;
+  background-size: contain; background-position: center; background-repeat: no-repeat;
   opacity: 0; will-change: opacity, transform;
 }
 .cinema-layer.show { opacity: 1; }
-.cinema-layer.kenburns { animation: kenburns 7s ease-out forwards; }
+.cinema-layer.kenburns { animation: kenburns 6s ease-out forwards; }
 @keyframes kenburns {
-  0%   { transform: scale(1.06) translate(0, 0); }
-  100% { transform: scale(1.14) translate(-1.2%, -1.2%); }
+  0%   { transform: scale(1.0); }
+  100% { transform: scale(1.06) translate(-1%, -1%); }
 }
 
 /* ============================================================
