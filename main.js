@@ -8,8 +8,6 @@
 
   /* ---------- config ---------- */
   const PHOTO_COUNT = 127;
-  const GRID_COLS = 13;                 // thematic
-  const GRID_ROWS = Math.ceil(PHOTO_COUNT / GRID_COLS);
 
   const FAST = new URLSearchParams(location.search).has("fast");
   const S = FAST ? 0.04 : 1;
@@ -95,28 +93,39 @@
   /* ============================================================
      MEMORY WALL
      ============================================================ */
+  // responsive column count — 13 on desktop (thematic), fewer on small screens
+  // so tiles stay big enough to read on a phone
+  function gridCols() {
+    const vw = innerWidth;
+    if (vw < 500) return 9;
+    if (vw < 820) return 11;
+    return 13;
+  }
+
   function computeLayout() {
     const vw = innerWidth, vh = innerHeight;
+    const cols = gridCols();
+    const rows = Math.ceil(PHOTO_COUNT / cols);
     const mx = vw * 0.035, my = vh * 0.035;
     const gap = 7;
     const availW = vw - mx * 2, availH = vh - my * 2;
-    let tw = (availW - gap * (GRID_COLS - 1)) / GRID_COLS;
+    let tw = (availW - gap * (cols - 1)) / cols;
     let th = tw / 0.75;                       // 3:4 portrait tile
-    if (th * GRID_ROWS + gap * (GRID_ROWS - 1) > availH) {
-      th = (availH - gap * (GRID_ROWS - 1)) / GRID_ROWS;
+    if (th * rows + gap * (rows - 1) > availH) {
+      th = (availH - gap * (rows - 1)) / rows;
       tw = th * 0.75;
     }
-    return { vw, vh, mx, my, gap, tw, th };
+    return { vw, vh, mx, my, gap, tw, th, cols, rows };
   }
 
   function gridPos(i) {
     const L = computeLayout();
-    const row = Math.floor(i / GRID_COLS);
-    const col = i % GRID_COLS;
+    const row = Math.floor(i / L.cols);
+    const col = i % L.cols;
     // centre an incomplete last row
-    const inLast = row === GRID_ROWS - 1;
-    const lastCount = PHOTO_COUNT - (GRID_ROWS - 1) * GRID_COLS;
-    const extra = inLast ? ((GRID_COLS - lastCount) / 2) : 0;
+    const inLast = row === L.rows - 1;
+    const lastCount = PHOTO_COUNT - (L.rows - 1) * L.cols;
+    const extra = inLast ? ((L.cols - lastCount) / 2) : 0;
     const x = L.mx + (col + extra) * (L.tw + L.gap);
     const y = L.my + row * (L.th + L.gap);
     return { x, y };
